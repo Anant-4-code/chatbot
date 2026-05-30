@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { DENTIST_SYSTEM_PROMPT } from "@/lib/system-prompt";
+import { getSystemPrompt } from "@/lib/system-prompt";
 
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -14,7 +14,7 @@ export async function getAIResponse(
     messages: [
       {
         role: "system",
-        content: DENTIST_SYSTEM_PROMPT,
+        content: getSystemPrompt(),
       },
       ...messages,
     ],
