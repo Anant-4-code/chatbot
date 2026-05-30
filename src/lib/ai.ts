@@ -47,11 +47,9 @@ export async function getAIResponse(
   const history = sanitizeHistory(messages);
 
   let result = await callModel(history);
-  if (!result.content && history.length > 1) {
-    const lastUser = [...history].reverse().find((m) => m.role === "user");
-    if (lastUser) {
-      result = await callModel([lastUser]);
-    }
+  // Retry once with same history (never drop context — that caused repeated greetings)
+  if (!result.content && history.length > 0) {
+    result = await callModel(history);
   }
 
   if (!result.content) {

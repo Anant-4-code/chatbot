@@ -96,6 +96,40 @@ export async function POST(request: NextRequest) {
       return Response.json({ status: "stored_for_human" });
     }
 
+    // Only the latest user message should get a reply (avoids duplicate greetings when user sends many texts quickly)
+    const { data: latestMsg } = await supabase
+      .from("messages")
+      .select("whatsapp_msg_id, role")
+      .eq("conversation_id", conversation.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (
+      latestMsg?.role !== "user" ||
+      latestMsg.whatsapp_msg_id !== whatsappMsgId
+    ) {
+      return Response.json({ status: "superseded" });
+    }
+
+    // Brief wait so rapid back-to-back messages are all in DB before we read history
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    const { data: stillLatest } = await supabase
+      .from("messages")
+      .select("whatsapp_msg_id, role")
+      .eq("conversation_id", conversation.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (
+      stillLatest?.role !== "user" ||
+      stillLatest.whatsapp_msg_id !== whatsappMsgId
+    ) {
+      return Response.json({ status: "superseded" });
+    }
+
     // Fetch conversation history (last 20 messages for context)
     const { data: history } = await supabase
       .from("messages")
